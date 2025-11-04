@@ -13,7 +13,7 @@
 
     <groupId>io.github.yusupoff03</groupId>
     <artifactId>logstream</artifactId>
-    <version>0.0.2</version>
+    <version>0.0.1</version>
     <name>LogStream</name>
     <description>In-memory log viewer for Spring Boot apps</description>
     <url>https://github.com/yusupoff03/logstream</url>
