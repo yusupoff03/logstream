@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.yusupoff03</groupId>
+        <artifactId>logstream-parent</artifactId>
+        <version>0.0.1</version>
+    </parent>
+
+    <artifactId>logstream-spring-boot-starter</artifactId>
+    <name>LogStream Spring Boot Starter</name>
+    <description>
+        The artifact users add to their applications.
+        Pulls in logstream-core and both storage modules as optional dependencies,
+        then uses List&lt;StorageProvider&gt; to auto-select the right backend at runtime.
+
+        Users who previously depended on io.github.yusupoff03:logstream should now
+        depend on this artifact: io.github.yusupoff03:logstream-spring-boot-starter.
+    </description>
+
+    <dependencies>
+
+        <!-- Core: all public contracts, controllers, appender, auth -->
+        <dependency>
+            <groupId>io.github.yusupoff03</groupId>
+            <artifactId>logstream-core</artifactId>
+        </dependency>
+
+        <!--
+            Storage providers — both included as optional.
+            Each module's own @ConditionalOnClass guards activation:
+            only the one whose DB driver is present on the classpath
+            will contribute a StorageProvider bean to the context.
+        -->
+        <dependency>
+            <groupId>io.github.yusupoff03</groupId>
+            <artifactId>logstream-storage-jdbc</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>io.github.yusupoff03</groupId>
+            <artifactId>logstream-storage-mongodb</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Spring Boot autoconfigure infrastructure -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- For annotation processor support (optional, IDE convenience) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Web runtime for WebMvcConfigurer / filter / servlet mapping -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+    </dependencies>
+
+</project>

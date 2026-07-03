@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LogStream — Live Log Viewer</title>
+  <meta name="description" content="Real-time in-memory log viewer for Spring Boot applications">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ═══════════════════ AUTH: LOADING SCREEN ═══════════════════ -->
+<!--
+  Shown while the app probes the API to determine auth status.
+  Hidden as soon as we know whether the user is logged in or not.
+-->
+<div id="auth-loading" role="status" aria-label="Checking authentication">
+  <div class="auth-loading-brand">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
+    </svg>
+    <span>Log<span class="brand-accent">Stream</span></span>
+  </div>
+  <div class="auth-spinner" aria-hidden="true"></div>
+  <span class="auth-loading-label">Connecting…</span>
+</div>
+
+<!-- ═══════════════════ AUTH: LOGIN PAGE ═══════════════════════ -->
+<!--
+  Only displayed when backend returns 401 on the initial probe.
+  Hidden immediately when security is disabled (200 on probe).
+-->
+<div id="login-page" role="main" aria-label="LogStream login">
+  <div class="login-card">
+
+    <div class="login-card-header">
+      <div class="login-logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
+        </svg>
+        <span class="login-logo-name">Log<span class="brand-accent">Stream</span></span>
+      </div>
+      <h1>Sign in to continue</h1>
+      <p>Enter your credentials to access the log viewer</p>
+    </div>
+
+    <!-- Error banner — shown on failed login attempts -->
+    <div class="login-error" id="login-error" role="alert" aria-live="assertive">
+      <span class="login-error-icon" aria-hidden="true">⚠</span>
+      <span id="login-error-msg">Invalid username or password.</span>
+    </div>
+
+    <form id="login-form" method="post" novalidate>
+      <div class="login-field">
+        <label class="login-label" for="login-username">Username</label>
+        <input
+          type="text"
+          id="login-username"
+          name="username"
+          class="login-input"
+          placeholder="Enter username"
+          autocomplete="username"
+          autocapitalize="none"
+          spellcheck="false"
+          required
+        >
+      </div>
+
+      <div class="login-field">
+        <label class="login-label" for="login-password">Password</label>
+        <input
+          type="password"
+          id="login-password"
+          name="password"
+          class="login-input"
+          placeholder="Enter password"
+          autocomplete="current-password"
+          required
+        >
+      </div>
+
+      <button type="submit" class="login-btn" id="login-submit">
+        <span class="login-btn-spinner" aria-hidden="true"></span>
+        <span class="login-btn-text">Sign in</span>
+      </button>
+    </form>
+
+    <div class="login-card-footer">
+      LogStream &mdash; Spring Boot Log Viewer
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ NAVBAR ═══════════════════ -->
+<nav class="navbar" role="banner">
+
+  <div class="navbar-brand">
+    <svg class="brand-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
+    </svg>
+    <span class="brand-name">Log<span class="brand-accent">Stream</span></span>
+    <span class="brand-badge">LIVE</span>
+  </div>
+
+  <div class="navbar-stats" id="stats-bar" role="status" aria-label="Log level counters">
+    <button class="stat-pill info"  id="pill-info"  data-level="INFO"  title="Click to toggle INFO filter">
+      <span class="stat-dot"></span><span class="stat-lv">INFO</span><span class="stat-n" id="n-info">0</span>
+    </button>
+    <button class="stat-pill warn"  id="pill-warn"  data-level="WARN"  title="Click to toggle WARN filter">
+      <span class="stat-dot"></span><span class="stat-lv">WARN</span><span class="stat-n" id="n-warn">0</span>
+    </button>
+    <button class="stat-pill error" id="pill-error" data-level="ERROR" title="Click to toggle ERROR filter">
+      <span class="stat-dot"></span><span class="stat-lv">ERROR</span><span class="stat-n" id="n-error">0</span>
+    </button>
+    <button class="stat-pill debug" id="pill-debug" data-level="DEBUG" title="Click to toggle DEBUG filter">
+      <span class="stat-dot"></span><span class="stat-lv">DEBUG</span><span class="stat-n" id="n-debug">0</span>
+    </button>
+    <button class="stat-pill trace" id="pill-trace" data-level="TRACE" title="Click to toggle TRACE filter">
+      <span class="stat-dot"></span><span class="stat-lv">TRACE</span><span class="stat-n" id="n-trace">0</span>
+    </button>
+  </div>
+
+  <div class="navbar-actions">
+    <div class="status-indicator" id="status-indicator" role="status" aria-live="polite">
+      <span class="si-ring" aria-hidden="true"></span>
+      <span class="si-dot"  aria-hidden="true"></span>
+      <span class="si-text" id="si-text">LIVE</span>
+    </div>
+
+    <button class="nb-btn" id="btn-pause" title="Pause live updates (Space)">
+      <svg viewBox="0 0 16 16" fill="currentColor" width="13" height="13" aria-hidden="true">
+        <path id="pause-icon" d="M5.5 3.5A1.5 1.5 0 017 5v6a1.5 1.5 0 01-3 0V5a1.5 1.5 0 011.5-1.5zm5 0A1.5 1.5 0 0112 5v6a1.5 1.5 0 01-3 0V5a1.5 1.5 0 011.5-1.5z"/>
+      </svg>
+      <span id="pause-label">Pause</span>
+    </button>
+
+    <button class="nb-btn" id="btn-clear" title="Clear log buffer">
+      <svg viewBox="0 0 16 16" fill="currentColor" width="13" height="13" aria-hidden="true">
+        <path fill-rule="evenodd" d="M14.5 3a1 1 0 01-1 1H13v9a2 2 0 01-2 2H5a2 2 0 01-2-2V4h-.5a1 1 0 010-2H6a1 1 0 011-1h2a1 1 0 011 1h3.5a1 1 0 011 1zM4.118 4L4 4.059V13a1 1 0 001 1h6a1 1 0 001-1V4.059L11.882 4H4.118zM2.5 3a.5.5 0 000 1h11a.5.5 0 000-1h-11z"/>
+      </svg>
+      Clear
+    </button>
+
+    <div class="dropdown" id="export-dropdown">
+      <button class="nb-btn" id="btn-export" aria-haspopup="menu" aria-expanded="false" title="Export logs">
+        <svg viewBox="0 0 16 16" fill="currentColor" width="13" height="13" aria-hidden="true">
+          <path d="M.5 9.9a.5.5 0 01.5.5v2.5a1 1 0 001 1h12a1 1 0 001-1v-2.5a.5.5 0 011 0v2.5a2 2 0 01-2 2H2a2 2 0 01-2-2v-2.5a.5.5 0 01.5-.5z"/>
+          <path d="M7.646 11.854a.5.5 0 00.708 0l3-3a.5.5 0 00-.708-.708L8.5 10.293V1.5a.5.5 0 00-1 0v8.793L5.354 8.146a.5.5 0 10-.708.708l3 3z"/>
+        </svg>
+        Export
+        <svg viewBox="0 0 10 6" fill="currentColor" width="8" height="8" aria-hidden="true"><path d="M0 0l5 6 5-6z"/></svg>
+      </button>
+      <div class="dropdown-menu" id="export-menu" role="menu" aria-hidden="true">
+        <button class="dd-item" id="btn-json" role="menuitem">
+          <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12"><path d="M14 4.5V14a2 2 0 01-2 2H4a2 2 0 01-2-2V2a2 2 0 012-2h5.5L14 4.5zm-3 0A1.5 1.5 0 019.5 3V1H4a1 1 0 00-1 1v12a1 1 0 001 1h8a1 1 0 001-1V4.5h-2z"/></svg>
+          Download JSON
+        </button>
+        <button class="dd-item" id="btn-txt" role="menuitem">
+          <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12"><path d="M5.5 7a.5.5 0 000 1h5a.5.5 0 000-1h-5zM5 9.5a.5.5 0 01.5-.5h5a.5.5 0 010 1h-5a.5.5 0 01-.5-.5zm0 2a.5.5 0 01.5-.5h2a.5.5 0 010 1h-2a.5.5 0 01-.5-.5z"/><path d="M9.5 0H4a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4.5L9.5 0zm0 1v2A1.5 1.5 0 0011 4.5h2V14a1 1 0 01-1 1H4a1 1 0 01-1-1V2a1 1 0 011-1h5.5z"/></svg>
+          Download TXT
+        </button>
+        <hr class="dd-sep">
+        <button class="dd-item" id="btn-copy" role="menuitem">
+          <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12"><path d="M4 1.5H3a2 2 0 00-2 2V14a2 2 0 002 2h10a2 2 0 002-2V3.5a2 2 0 00-2-2h-1v1h1a1 1 0 011 1V14a1 1 0 01-1 1H3a1 1 0 01-1-1V3.5a1 1 0 011-1h1v-1z"/><path d="M9.5 1a.5.5 0 01.5.5v1a.5.5 0 01-.5.5h-3a.5.5 0 01-.5-.5v-1a.5.5 0 01.5-.5h3zm-3-1A1.5 1.5 0 005 1.5v1A1.5 1.5 0 006.5 4h3A1.5 1.5 0 0011 2.5v-1A1.5 1.5 0 009.5 0h-3z"/></svg>
+          Copy visible
+        </button>
+      </div>
+    </div>
+
+    <!--
+      Logout button — only visible when security is enabled and user is logged in.
+      Hidden by default; Auth module shows/hides it.
+    -->
+    <button class="nb-btn logout-btn hidden" id="btn-logout" title="Sign out">
+      <svg viewBox="0 0 16 16" fill="currentColor" width="13" height="13" aria-hidden="true">
+        <path fill-rule="evenodd" d="M10 12.5a.5.5 0 01-.5.5h-8a.5.5 0 01-.5-.5v-9a.5.5 0 01.5-.5h8a.5.5 0 01.5.5v2a.5.5 0 001 0v-2A1.5 1.5 0 009.5 2h-8A1.5 1.5 0 000 3.5v9A1.5 1.5 0 001.5 14h8a1.5 1.5 0 001.5-1.5v-2a.5.5 0 00-1 0v2z"/>
+        <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 000-.708l-3-3a.5.5 0 00-.708.708L14.293 7.5H5.5a.5.5 0 000 1h8.793l-2.147 2.146a.5.5 0 00.708.708l3-3z"/>
+      </svg>
+      Sign out
+    </button>
+  </div>
+</nav>
+
+<!-- ═══════════════════ BODY ═══════════════════ -->
+<div class="workspace">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" role="complementary" aria-label="Filters and options">
+
+    <div class="sb-section">
+      <p class="sb-label">Search</p>
+      <div class="search-wrap">
+        <svg class="search-ico" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <path d="M11.742 10.344a6.5 6.5 0 10-1.397 1.398h-.001l3.85 3.85a1 1 0 001.415-1.414l-3.85-3.85a1.007 1.007 0 00-.115-.099 6.5 6.5 0 00-.902-.685zm-5.242 1.656a5.5 5.5 0 110-11 5.5 5.5 0 010 11z"/>
+        </svg>
+        <input type="search" id="search-input" class="search-input"
+               placeholder="Search messages… (Ctrl+F)"
+               autocomplete="off" spellcheck="false"
+               aria-label="Search log messages">
+        <button class="search-x hidden" id="search-clear" aria-label="Clear search">✕</button>
+      </div>
+    </div>
+
+    <div class="sb-section">
+      <p class="sb-label">Level</p>
+      <div class="level-list" role="group" aria-label="Filter by log level">
+        <label class="lv-chip info  active" for="chk-INFO" >
+          <input type="checkbox" id="chk-INFO"  value="INFO"  checked><span class="lv-dot"></span><span>INFO</span> <span class="lv-n" id="ln-INFO">0</span>
+        </label>
+        <label class="lv-chip warn  active" for="chk-WARN" >
+          <input type="checkbox" id="chk-WARN"  value="WARN"  checked><span class="lv-dot"></span><span>WARN</span> <span class="lv-n" id="ln-WARN">0</span>
+        </label>
+        <label class="lv-chip error active" for="chk-ERROR">
+          <input type="checkbox" id="chk-ERROR" value="ERROR" checked><span class="lv-dot"></span><span>ERROR</span><span class="lv-n" id="ln-ERROR">0</span>
+        </label>
+        <label class="lv-chip debug active" for="chk-DEBUG">
+          <input type="checkbox" id="chk-DEBUG" value="DEBUG" checked><span class="lv-dot"></span><span>DEBUG</span><span class="lv-n" id="ln-DEBUG">0</span>
+        </label>
+        <label class="lv-chip trace active" for="chk-TRACE">
+          <input type="checkbox" id="chk-TRACE" value="TRACE" checked><span class="lv-dot"></span><span>TRACE</span><span class="lv-n" id="ln-TRACE">0</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="sb-section">
+      <p class="sb-label">Logger class</p>
+      <input type="text" id="filter-logger" class="sb-input" placeholder="e.g. com.example" autocomplete="off">
+    </div>
+
+    <div class="sb-section">
+      <p class="sb-label">Thread</p>
+      <input type="text" id="filter-thread" class="sb-input" placeholder="e.g. http-nio-exec" autocomplete="off">
+    </div>
+
+    <div class="sb-section">
+      <p class="sb-label">Display</p>
+      <div class="toggle-list">
+        <label class="toggle-row">
+          <span>Auto-scroll</span>
+          <label class="sw"><input type="checkbox" id="chk-autoscroll" checked><span class="sw-track"></span></label>
+        </label>
+        <label class="toggle-row">
+          <span>Wrap lines</span>
+          <label class="sw"><input type="checkbox" id="chk-wrap"><span class="sw-track"></span></label>
+        </label>
+        <label class="toggle-row">
+          <span>Show thread</span>
+          <label class="sw"><input type="checkbox" id="chk-thread" checked><span class="sw-track"></span></label>
+        </label>
+      </div>
+    </div>
+
+    <div class="sb-footer">
+      <div class="entry-counter">
+        <span id="vis-count">0</span><span class="ec-sep">/</span><span id="tot-count">0</span>
+        <span class="ec-label">entries</span>
+      </div>
+      <div class="kbd-hints">
+        <span class="kbd">Space</span> pause &nbsp;
+        <span class="kbd">Ctrl+F</span> search &nbsp;
+        <span class="kbd">End</span> bottom
+      </div>
+    </div>
+  </aside>
+
+  <!-- LOG PANEL -->
+  <main class="log-panel" id="log-panel" aria-label="Application logs" aria-live="polite" aria-relevant="additions">
+
+    <div class="empty-state" id="empty-state">
+      <svg class="es-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <rect x="8" y="4" width="32" height="40" rx="3"/>
+        <line x1="16" y1="16" x2="32" y2="16"/>
+        <line x1="16" y1="23" x2="32" y2="23"/>
+        <line x1="16" y1="30" x2="24" y2="30"/>
+      </svg>
+      <h2>Waiting for logs…</h2>
+      <p>LogStream is connected and listening.<br>Entries appear here as your application runs.</p>
+    </div>
+
+    <div class="log-list" id="log-list" role="log" aria-label="Log entries"></div>
+  </main>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast" role="alert" aria-live="assertive" aria-atomic="true"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

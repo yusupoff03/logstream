@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.yusupoff03</groupId>
+        <artifactId>logstream-parent</artifactId>
+        <version>0.0.1</version>
+    </parent>
+
+    <artifactId>logstream-demo</artifactId>
+    <name>LogStream Demo</name>
+    <description>
+        Runnable Spring Boot demo application that shows LogStream in action
+        using in-memory storage (no external database required).
+    </description>
+
+    <dependencies>
+
+        <!-- The starter — everything is pulled in transitively -->
+        <dependency>
+            <groupId>io.github.yusupoff03</groupId>
+            <artifactId>logstream-spring-boot-starter</artifactId>
+        </dependency>
+
+        <!-- Web runtime for the demo app itself -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!--
+            Uncomment to test JDBC storage with an embedded H2 database:
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        -->
+
+        <!--
+            Uncomment to test MongoDB storage:
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-mongodb</artifactId>
+        </dependency>
+        -->
+
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Demo is a runnable app — override parent's skip=true -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <skip>false</skip>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.yusupoff03</groupId>
+        <artifactId>logstream-parent</artifactId>
+        <version>0.0.1</version>
+    </parent>
+
+    <artifactId>logstream-storage-jdbc</artifactId>
+    <name>LogStream Storage — JDBC</name>
+    <description>
+        JDBC storage implementation for LogStream.
+        Provides JdbcLogStorage and JdbcStorageProvider.
+        Registers itself as a StorageProvider when JdbcTemplate is on the classpath.
+        Supports MySQL, PostgreSQL, H2, and any JDBC-compliant database.
+    </description>
+
+    <dependencies>
+
+        <!-- Core contracts (LogStorage, StorageProvider, LogEntry) -->
+        <dependency>
+            <groupId>io.github.yusupoff03</groupId>
+            <artifactId>logstream-core</artifactId>
+        </dependency>
+
+        <!--
+            JDBC support — provided because the consumer application supplies
+            the real spring-boot-starter-jdbc / spring-boot-starter-data-jpa.
+            Marked optional so it is not transitively pulled into the starter.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+            <scope>provided</scope>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Auto-configuration support (@AutoConfiguration, @ConditionalOnClass, …) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+    </dependencies>
+
+</project>

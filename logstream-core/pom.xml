@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.yusupoff03</groupId>
+        <artifactId>logstream-parent</artifactId>
+        <version>0.0.1</version>
+    </parent>
+
+    <artifactId>logstream-core</artifactId>
+    <name>LogStream Core</name>
+    <description>
+        Core module: LogStorage interface, StorageProvider contract, appender,
+        controllers, models, DTOs, and static UI assets.
+        Has ZERO dependency on any specific database (JDBC, MongoDB, …).
+    </description>
+
+    <dependencies>
+
+        <!-- Web MVC — controllers, filter, MVC configurer -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Configuration-properties binding (@ConfigurationProperties) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- SLF4J API (Logback appender) -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+
+        <!-- Logback classic (AppenderBase, ILoggingEvent, …) -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.5.6</version>
+        </dependency>
+
+        <!-- Jackson for JSON serialisation of LogEntry -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.18.1</version>
+        </dependency>
+
+    </dependencies>
+
+</project>

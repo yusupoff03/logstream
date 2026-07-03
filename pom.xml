@@ -12,10 +12,12 @@
     </parent>
 
     <groupId>io.github.yusupoff03</groupId>
-    <artifactId>logstream</artifactId>
+    <artifactId>logstream-parent</artifactId>
     <version>0.0.1</version>
-    <name>LogStream</name>
-    <description>In-memory log viewer for Spring Boot apps</description>
+    <packaging>pom</packaging>
+
+    <name>LogStream Parent</name>
+    <description>Multi-module parent for the LogStream Spring Boot starter</description>
     <url>https://github.com/yusupoff03/logstream</url>
 
     <licenses>
@@ -39,45 +41,105 @@
         <url>https://github.com/yusupoff03/logstream</url>
     </scm>
 
-    <distributionManagement>
-        <repository>
-            <id>central</id>
-            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-        <snapshotRepository>
-            <id>central</id>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
-        </snapshotRepository>
-    </distributionManagement>
+    <!-- ── Modules ─────────────────────────────────────────────────── -->
+    <modules>
+        <module>logstream-core</module>
+        <module>logstream-storage-jdbc</module>
+        <module>logstream-storage-mongodb</module>
+        <module>logstream-spring-boot-starter</module>
+        <module>demo</module>
+    </modules>
 
+    <!-- ── Properties ─────────────────────────────────────────────── -->
     <properties>
         <java.version>17</java.version>
     </properties>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-            <scope>provided</scope>
-        </dependency>
+    <!-- ── Dependency Management ──────────────────────────────────── -->
+    <!--
+        Pin inter-module artifact versions here once so every child module
+        can reference siblings without repeating the version literal.
+    -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.github.yusupoff03</groupId>
+                <artifactId>logstream-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.yusupoff03</groupId>
+                <artifactId>logstream-storage-jdbc</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.yusupoff03</groupId>
+                <artifactId>logstream-storage-mongodb</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.yusupoff03</groupId>
+                <artifactId>logstream-spring-boot-starter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-        </dependency>
+    <!-- ── Build ──────────────────────────────────────────────────── -->
+    <build>
+        <pluginManagement>
+            <plugins>
+                <!--
+                    Library modules must NOT be repackaged as executable fat JARs.
+                    Skip is the default here; the demo module overrides it to false.
+                -->
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <configuration>
+                        <skip>true</skip>
+                    </configuration>
+                </plugin>
 
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.5.6</version>
-        </dependency>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>3.3.0</version>
+                    <executions>
+                        <execution>
+                            <id>attach-javadocs</id>
+                            <goals><goal>jar</goal></goals>
+                        </execution>
+                    </executions>
+                </plugin>
 
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>2.18.1</version>
-        </dependency>
-    </dependencies>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <version>3.2.1</version>
+                    <executions>
+                        <execution>
+                            <id>attach-sources</id>
+                            <goals><goal>jar-no-fork</goal></goals>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-gpg-plugin</artifactId>
+                    <version>1.6</version>
+                    <executions>
+                        <execution>
+                            <id>sign-artifacts</id>
+                            <phase>verify</phase>
+                            <goals><goal>sign</goal></goals>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 
     <pluginRepositories>
         <pluginRepository>
@@ -86,65 +148,4 @@
         </pluginRepository>
     </pluginRepositories>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-
-            <plugin>
-                <groupId>org.sonatype.central</groupId>
-                <artifactId>central-publishing-maven-plugin</artifactId>
-                <version>0.9.0</version>
-                <extensions>true</extensions>
-                <configuration>
-                    <publishingServerId>central</publishingServerId>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.3.0</version>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>3.2.1</version>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <goals>
-                            <goal>jar-no-fork</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-gpg-plugin</artifactId>
-                <version>1.6</version>
-                <executions>
-                    <execution>
-                        <id>sign-artifacts</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>sign</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
 </project>
